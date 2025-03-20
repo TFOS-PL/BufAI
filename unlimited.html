@@ -3,29 +3,37 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Bufa AI - Chat i Głos</title>
+    <title>Bufa AI - Chat z Głosem</title>
     <style>
-        body { font-family: Arial, sans-serif; text-align: center; }
-        input, button { padding: 10px; margin: 5px; }
+        body { font-family: Arial, sans-serif; text-align: center; background-color: #222; color: white; padding: 20px; }
+        #chat-box { max-width: 600px; margin: auto; background: #333; padding: 20px; border-radius: 10px; text-align: left; }
+        .message { padding: 10px; border-radius: 5px; margin: 5px 0; }
+        .user { background: #007bff; text-align: right; }
+        .ai { background: #444; text-align: left; }
+        input, button { padding: 10px; margin: 5px; border-radius: 5px; }
+        button { cursor: pointer; }
     </style>
 </head>
 <body>
-    <h1>Bufa AI - Chat i Głos</h1>
-    <div>
-        <input type="text" id="userInput" placeholder="Zadaj pytanie...">
-        <button onclick="askAI()">📩 Wyślij</button>
-        <button onclick="startDictation()">🎤 Mów</button>
-    </div>
-    <p id="response"></p>
-    <button onclick="speakText()">🔊 Odtwórz Głos</button>
+    <h1>Bufa AI - Chat z Głosem</h1>
+    <div id="chat-box"></div>
+    <input type="text" id="userInput" placeholder="Zadaj pytanie..." onkeypress="handleKey(event)">
+    <button onclick="askAI()">📩 Wyślij</button>
+    <button onclick="startDictation()">🎤 Mów</button>
+    <button onclick="stopSpeaking()">⏹ Przerwij Mowę</button>
 
     <script>
+        let synth = window.speechSynthesis;
+
         async function askAI() {
             let userMessage = document.getElementById("userInput").value;
-            let responseElement = document.getElementById("response");
+            if (!userMessage) return;
 
-            let apiKey = "twój-klucz-api";  // Wstaw własny klucz API (DeepSeek lub inny)
-            let apiUrl = "https://api.deepseek.com/v1/chat/completions"; // DeepSeek API
+            addMessage(userMessage, "user");
+            document.getElementById("userInput").value = "";
+
+            let apiKey = "sk-b4ccb3778f1c474ba69869714670bba0";  // Wstaw własny klucz API
+            let apiUrl = "https://api.deepseek.com/v1/chat/completions";
 
             let response = await fetch(apiUrl, {
                 method: "POST",
@@ -38,25 +46,42 @@
 
             let data = await response.json();
             let aiResponse = data.choices[0].message.content;
-            responseElement.innerText = aiResponse;
+            addMessage(aiResponse, "ai");
+            speakText(aiResponse);
         }
 
-        function speakText() {
-            let text = document.getElementById("response").innerText;
+        function addMessage(text, sender) {
+            let chatBox = document.getElementById("chat-box");
+            let messageDiv = document.createElement("div");
+            messageDiv.classList.add("message", sender);
+            messageDiv.innerText = text;
+            chatBox.appendChild(messageDiv);
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        function speakText(text) {
             let msg = new SpeechSynthesisUtterance(text);
-            msg.lang = "pl-PL";  // Polski głos
-            window.speechSynthesis.speak(msg);
+            msg.lang = "pl-PL";
+            synth.speak(msg);
+        }
+
+        function stopSpeaking() {
+            synth.cancel();
         }
 
         function startDictation() {
             let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-            recognition.lang = "pl-PL"; // Polski język
+            recognition.lang = "pl-PL";
             recognition.start();
 
             recognition.onresult = function(event) {
                 let transcript = event.results[0][0].transcript;
                 document.getElementById("userInput").value = transcript;
             };
+        }
+
+        function handleKey(event) {
+            if (event.key === "Enter") askAI();
         }
     </script>
 </body>
