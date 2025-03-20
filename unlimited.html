@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bufa AI - Chat i Głos</title>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        input, button { padding: 10px; margin: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Bufa AI - Chat i Głos</h1>
+    <div>
+        <input type="text" id="userInput" placeholder="Zadaj pytanie...">
+        <button onclick="askAI()">📩 Wyślij</button>
+        <button onclick="startDictation()">🎤 Mów</button>
+    </div>
+    <p id="response"></p>
+    <button onclick="speakText()">🔊 Odtwórz Głos</button>
+
+    <script>
+        async function askAI() {
+            let userMessage = document.getElementById("userInput").value;
+            let responseElement = document.getElementById("response");
+
+            let apiKey = "twój-klucz-api";  // Wstaw własny klucz API (DeepSeek lub inny)
+            let apiUrl = "https://api.deepseek.com/v1/chat/completions"; // DeepSeek API
+
+            let response = await fetch(apiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json", "Authorization": `Bearer ${apiKey}` },
+                body: JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [{ role: "user", content: userMessage }]
+                })
+            });
+
+            let data = await response.json();
+            let aiResponse = data.choices[0].message.content;
+            responseElement.innerText = aiResponse;
+        }
+
+        function speakText() {
+            let text = document.getElementById("response").innerText;
+            let msg = new SpeechSynthesisUtterance(text);
+            msg.lang = "pl-PL";  // Polski głos
+            window.speechSynthesis.speak(msg);
+        }
+
+        function startDictation() {
+            let recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+            recognition.lang = "pl-PL"; // Polski język
+            recognition.start();
+
+            recognition.onresult = function(event) {
+                let transcript = event.results[0][0].transcript;
+                document.getElementById("userInput").value = transcript;
+            };
+        }
+    </script>
+</body>
+</html>
